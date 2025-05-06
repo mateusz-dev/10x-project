@@ -1,0 +1,20 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { GenerateFlashcardsForm } from "../components/GenerateFlashcardsForm";
+---
+
+<Layout title="Generate Flashcards">
+  <main class="container mx-auto py-8 px-4">
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">Generate Flashcards</h1>
+        <p class="text-muted-foreground">
+          Enter your text below to generate flashcards. The AI will analyze your text and suggest flashcards that you
+          can review, edit, and save to your collection.
+        </p>
+      </div>
+
+      <GenerateFlashcardsForm client:load />
+    </div>
+  </main>
+</Layout>
