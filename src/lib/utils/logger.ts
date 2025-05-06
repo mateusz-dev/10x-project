@@ -3,8 +3,9 @@ type LogContext = Record<string, unknown>;
 
 const logMessage = (level: LogLevel, component: string, message: string, context?: LogContext) => {
   // In production, this could be replaced with proper logging service
+  const timestamp = new Date().toISOString();
   // eslint-disable-next-line no-console
-  console[level](`[${component}] ${message}`, context);
+  console[level](`${timestamp} [${component}] ${message}`, context);
 };
 
 export const logger = {

@@ -1,6 +1,7 @@
 ﻿import type { APIRoute } from "astro";
 import { z } from "zod";
 import { createGenerationSession, GenerationError } from "../../lib/services/generation-sessions";
+import { logger } from "@/lib/utils/logger";
 import { SampleUserId } from "@/db/supabase.client";
 
 export const prerender = false;
@@ -45,8 +46,7 @@ export const POST: APIRoute = async ({ request, locals }): Promise<Response> => 
     }
 
     // Log error but don't expose details to client
-    // eslint-disable-next-line no-console
-    console.error("[API Error]:", error);
+    logger.error("generation-sessions", "API Error", { error });
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500 });
   }
 };

@@ -94,7 +94,7 @@ export type GenerationSessionDetailResponseDto = GenerationSessionDto & {
   flashcards: (Pick<Tables<"flashcards">, "id" | "front" | "back"> & { origin_type: FlashcardOriginType })[];
 };
 
-export type AcceptFlashcardAction = "accept_original" | "accept_edited" | "reject";
+export type AcceptFlashcardAction = "original" | "edited" | "reject";
 export interface AcceptFlashcardDto {
   temp_id: string;
   action: AcceptFlashcardAction;
@@ -115,6 +115,3 @@ export interface AcceptFlashcardsResponseDto {
 }
 
 export type GenerationSessionDeleteResponseDto = DeleteResponseDto;
-
-// Common command and response types
-export interface GenericDeleteResponse extends DeleteResponseDto {}

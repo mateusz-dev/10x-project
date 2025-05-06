@@ -1,4 +1,5 @@
 ﻿import { z } from "zod";
+import type { AcceptFlashcardAction } from "../../types";
 
 export const flashcardsListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -9,3 +10,25 @@ export const flashcardsListQuerySchema = z.object({
 });
 
 export type FlashcardsListQueryParams = z.infer<typeof flashcardsListQuerySchema>;
+
+export const acceptFlashcardSchema = z
+  .object({
+    temp_id: z.string().uuid(),
+    action: z.enum(["original", "edited", "reject"] as const satisfies readonly AcceptFlashcardAction[]),
+    front: z.string().max(1000).optional(),
+    back: z.string().max(1000).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.action === "reject") return true;
+      return data.front != null && data.back != null;
+    },
+    {
+      message: "front and back are required when action is accept_original or accept_edited",
+      path: ["front", "back"],
+    }
+  );
+
+export const acceptFlashcardsCommandSchema = z.object({
+  flashcards: z.array(acceptFlashcardSchema).min(1),
+});
