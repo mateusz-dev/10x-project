@@ -1,4 +1,16 @@
-﻿const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+﻿import { z } from "zod";
+
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// Response schema validation
+const flashcardSchema = z.object({
+  front: z.string().min(1).trim(),
+  back: z.string().min(1).trim(),
+});
+
+const flashcardsResponseSchema = z.object({
+  flashcards: z.array(flashcardSchema),
+});
 
 export class AIError extends Error {
   constructor(
@@ -14,7 +26,7 @@ interface OpenRouterResponse {
   id: string;
   choices: {
     message: {
-      content: string;
+      content: string; // Changed to string since OpenRouter returns JSON string
     };
   }[];
 }
@@ -30,19 +42,11 @@ Generate flashcards that follow these rules:
 2. Keep questions clear and specific
 3. Answers should be concise but complete
 4. Avoid yes/no questions
-5. Focus on key concepts and relationships
-
-Format your response as a JSON array of objects with 'front' (question) and 'back' (answer) properties.
-Example:
-[
-  {
-    "front": "What is the main role of mitochondria in a cell?",
-    "back": "Mitochondria are the powerhouse of the cell, producing ATP through cellular respiration"
-  }
-]`;
+5. Focus on key concepts and relationships`;
 
 export async function generateFlashcards(sourceText: string): Promise<GeneratedFlashcard[]> {
-  if (!import.meta.env.OPENROUTER_API_KEY) {
+  const apiKey = import.meta.env.OPENROUTER_API_KEY as string;
+  if (!apiKey) {
     throw new AIError("OpenRouter API key is not configured", 500);
   }
 
@@ -51,9 +55,7 @@ export async function generateFlashcards(sourceText: string): Promise<GeneratedF
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.OPENROUTER_API_KEY}`,
-        "HTTP-Referer": import.meta.env.PUBLIC_SITE_URL,
-        "X-Title": "10x-cards Flashcard Generator",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini",
@@ -61,6 +63,38 @@ export async function generateFlashcards(sourceText: string): Promise<GeneratedF
           { role: "system", content: systemPrompt },
           { role: "user", content: `Generate flashcards from this text:\n${sourceText}` },
         ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "flashcards",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                flashcards: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      front: {
+                        type: "string",
+                        description: "The question or prompt side of the flashcard",
+                      },
+                      back: {
+                        type: "string",
+                        description: "The answer or explanation side of the flashcard",
+                      },
+                    },
+                    required: ["front", "back"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["flashcards"],
+              additionalProperties: false,
+            },
+          },
+        },
       }),
     });
 
@@ -72,23 +106,24 @@ export async function generateFlashcards(sourceText: string): Promise<GeneratedF
     }
 
     const result = (await response.json()) as OpenRouterResponse;
-    const flashcardsJson = result.choices[0]?.message?.content;
+    const content = result.choices[0]?.message?.content;
 
-    if (!flashcardsJson) {
-      throw new AIError("Invalid response from AI service", 502);
+    if (!content) {
+      throw new AIError("Invalid response from AI service: missing content", 502);
     }
 
+    // Parse the JSON string content first, then validate with Zod
     try {
-      const flashcards = JSON.parse(flashcardsJson) as GeneratedFlashcard[];
-      if (!Array.isArray(flashcards)) {
-        throw new Error("Response is not an array");
+      const parsedContent = JSON.parse(content);
+      const parsedResponse = flashcardsResponseSchema.parse(parsedContent);
+      return parsedResponse.flashcards;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new AIError(`Invalid JSON response from AI service: ${error.message}`, 502);
       }
-
-      return flashcards.map((card) => ({
-        front: card.front.trim(),
-        back: card.back.trim(),
-      }));
-    } catch {
+      if (error instanceof z.ZodError) {
+        throw new AIError(`Invalid flashcard format: ${error.message}`, 502);
+      }
       throw new AIError("Failed to parse AI response", 502);
     }
   } catch (error) {
