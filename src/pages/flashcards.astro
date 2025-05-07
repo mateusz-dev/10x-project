@@ -1,0 +1,14 @@
+﻿---
+import Layout from "../layouts/Layout.astro";
+import { FlashcardList } from "@/components/FlashcardList";
+---
+
+<Layout title="My Flashcards | Flashcards App">
+  <main class="container mx-auto py-8">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold">My Flashcards</h1>
+    </div>
+
+    <FlashcardList client:load />
+  </main>
+</Layout>
