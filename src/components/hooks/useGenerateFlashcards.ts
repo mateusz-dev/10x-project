@@ -120,13 +120,13 @@ export function useGenerateFlashcards() {
       }
 
       setSuccessMessage("Flashcards saved successfully!");
-
       // Reset the form
       setSourceText("");
       setCharCount(0);
       setIsValidText(false);
       setSuggestedFlashcards([]);
       setSessionId(null);
+      window.location.href = "/flashcards";
     } catch (error) {
       setSavingError(error instanceof Error ? error.message : "Failed to save flashcards. Please try again.");
     } finally {

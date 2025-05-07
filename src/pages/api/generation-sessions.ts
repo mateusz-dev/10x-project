@@ -1,8 +1,9 @@
-﻿import type { APIRoute } from "astro";
+﻿/// <reference types="astro/client" />
+import type { APIRoute } from "astro";
+import type { APIContext } from "../../types";
 import { z } from "zod";
 import { createGenerationSession, GenerationError } from "../../lib/services/generation-sessions";
 import { logger } from "@/lib/utils/logger";
-import { SampleUserId } from "@/db/supabase.client";
 
 export const prerender = false;
 
@@ -13,13 +14,12 @@ const createGenerationSessionSchema = z.object({
     .max(10000, "Source text cannot exceed 10000 characters"),
 });
 
-export const POST: APIRoute = async ({ request, locals }): Promise<Response> => {
+export const POST: APIRoute = async ({ request, locals }: APIContext): Promise<Response> => {
   try {
-    // TODO: Add authentication middleware to ensure user is logged in
-    const { supabase } = locals;
-    // if (!user?.id) {
-    //   return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-    // }
+    const { user, supabase } = locals;
+    if (!user?.id) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
     const body = await request.json();
     const result = createGenerationSessionSchema.safeParse(body);
@@ -34,7 +34,7 @@ export const POST: APIRoute = async ({ request, locals }): Promise<Response> => 
       );
     }
 
-    const response = await createGenerationSession(supabase, SampleUserId, result.data);
+    const response = await createGenerationSession(supabase, user.id, result.data);
 
     return new Response(JSON.stringify(response), {
       status: 201,

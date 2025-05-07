@@ -1,18 +1,19 @@
-﻿import type { APIRoute } from "astro";
+﻿/// <reference types="astro/client" />
+import type { APIRoute } from "astro";
+import type { APIContext } from "../../types";
 import { flashcardsListQuerySchema } from "../../lib/schemas/flashcards";
 import { getFlashcards } from "../../lib/services/flashcards";
 import { logger } from "../../lib/utils/logger";
 import { randomUUID } from "crypto";
-import { SampleUserId } from "@/db/supabase.client";
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ url, locals }) => {
+export const GET: APIRoute = async ({ url, locals }: APIContext) => {
   const correlationId = randomUUID();
   const startTime = performance.now();
 
   try {
-    const { supabase } = locals;
+    const { user, supabase } = locals;
 
     logger.info("flashcards-api", "Processing request", {
       correlationId,
@@ -20,17 +21,16 @@ export const GET: APIRoute = async ({ url, locals }) => {
       query: Object.fromEntries(url.searchParams),
     });
 
-    //TODO: Uncomment and implement authentication middleware
-    // if (!user) {
-    //   logger.warn("flashcards-api", "Unauthorized request", {
-    //     correlationId,
-    //     path: url.pathname,
-    //   });
-    //   return new Response(JSON.stringify({ message: "Unauthorized" }), {
-    //     status: 401,
-    //     headers: { "Content-Type": "application/json" },
-    //   });
-    // }
+    if (!user) {
+      logger.warn("flashcards-api", "Unauthorized request", {
+        correlationId,
+        path: url.pathname,
+      });
+      return new Response(JSON.stringify({ message: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const params = Object.fromEntries(url.searchParams);
     const result = flashcardsListQuerySchema.safeParse(params);
@@ -52,7 +52,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       );
     }
 
-    const response = await getFlashcards(supabase, SampleUserId, result.data, correlationId);
+    const response = await getFlashcards(supabase, user.id, result.data, correlationId);
     const endTime = performance.now();
 
     logger.info("flashcards-api", "Request completed successfully", {

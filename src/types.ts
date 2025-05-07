@@ -1,5 +1,7 @@
 ﻿// Import base types from database models
 import type { Tables, TablesInsert } from "./db/database.types";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "./db/database.types";
 
 // Generic pagination types
 export interface Pagination {
@@ -115,3 +117,40 @@ export interface AcceptFlashcardsResponseDto {
 }
 
 export type GenerationSessionDeleteResponseDto = DeleteResponseDto;
+
+// Auth types
+export interface LoginRequestDto {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponseDto {
+  user: {
+    id: string;
+    email: string;
+  };
+  token: string;
+}
+
+export interface AuthError {
+  message: string;
+  code?: string;
+}
+
+// API Context types
+export interface APIContext {
+  locals: {
+    supabase: SupabaseClient<Database>;
+    user?: {
+      id: string;
+      email: string | null;
+    };
+  };
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+  redirect: (path: string) => Response;
+  cookies: unknown;
+}
+
+export type { Database };

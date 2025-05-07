@@ -1,23 +1,20 @@
-﻿import type { APIRoute } from "astro";
+﻿/// <reference types="astro/client" />
+import type { APIRoute } from "astro";
+import type { APIContext } from "../../../../types";
 import { acceptFlashcardsCommandSchema } from "../../../../lib/schemas/flashcards";
 import { acceptFlashcards } from "../../../../lib/services/generation-sessions";
 import { logger } from "../../../../lib/utils/logger";
-import { SampleUserId } from "@/db/supabase.client";
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ params, request, locals }) => {
+export const POST: APIRoute = async ({ params, request, locals }: APIContext) => {
   try {
     // Early auth check
-    const { supabase } = locals;
+    const { user, supabase } = locals;
 
-    // TODO: Uncomment and implement authentication middleware
-    // const {
-    //   data: { user },
-    // } = await supabase.auth.getUser();
-    // if (!user) {
-    //   return new Response("Unauthorized", { status: 401 });
-    // }
+    if (!user) {
+      return new Response("Unauthorized", { status: 401 });
+    }
 
     // Validate session ID
     const { id: sessionId } = params;
@@ -43,7 +40,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     }
 
     // Process flashcards
-    const result = await acceptFlashcards(supabase, sessionId, SampleUserId, validationResult.data);
+    const result = await acceptFlashcards(supabase, sessionId, user.id, validationResult.data);
 
     return new Response(JSON.stringify(result), {
       status: 200,
