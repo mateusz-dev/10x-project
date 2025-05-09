@@ -125,6 +125,20 @@ create policy "Anon users cannot create generation sessions"
     to anon
     with check (false);
 
+-- Update policies
+create policy "Authenticated users can update their own generation sessions"
+    on generation_sessions
+    for update
+    to authenticated
+    using (auth.uid() = user_id)
+    with check (auth.uid() = user_id);
+
+create policy "Anon users cannot update generation sessions"
+    on generation_sessions
+    for update
+    to anon
+    using (false);
+
 -- Delete policies
 create policy "Authenticated users can delete their own generation sessions"
     on generation_sessions
