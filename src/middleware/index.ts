@@ -29,7 +29,7 @@ export const onRequest = defineMiddleware(async ({ cookies, request, url, locals
   if (user) {
     locals.user = {
       id: user.id,
-      email: user.email,
+      email: user.email ?? null,
     };
   }
 

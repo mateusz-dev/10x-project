@@ -2,6 +2,9 @@
 import { createServerClient, type CookieOptionsWithName } from "@supabase/ssr";
 import type { Database } from "./database.types";
 
+// Re-export so other files can use this type
+export type { SupabaseClient } from "@supabase/supabase-js";
+
 export const cookieOptions: CookieOptionsWithName = {
   path: "/",
   secure: true,
@@ -9,39 +12,19 @@ export const cookieOptions: CookieOptionsWithName = {
   sameSite: "lax",
 };
 
-function parseCookieHeader(cookieHeader: string): { name: string; value: string }[] {
-  return cookieHeader.split(";").map((cookie) => {
-    const [name, ...rest] = cookie.trim().split("=");
-    return { name, value: rest.join("=") };
-  });
-}
-
-interface CookieData {
-  name: string;
-  value: string;
-  options?: {
-    httpOnly?: boolean;
-    secure?: boolean;
-    path?: string;
-    sameSite?: "lax" | "strict" | "none";
-    maxAge?: number;
-  };
-}
-
 export const createSupabaseServerInstance = (context: { headers: Headers; cookies: AstroCookies }) => {
-  const supabase = createServerClient<Database>(import.meta.env.SUPABASE_URL, import.meta.env.SUPABASE_KEY, {
+  return createServerClient<Database, "public">(import.meta.env.SUPABASE_URL, import.meta.env.SUPABASE_KEY, {
     cookieOptions,
     cookies: {
-      getAll() {
-        return parseCookieHeader(context.headers.get("Cookie") ?? "");
+      get(key) {
+        return context.cookies.get(key)?.value;
       },
-      setAll(cookiesToSet: CookieData[]) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          context.cookies.set(name, value, options);
-        });
+      set(key, value, options) {
+        context.cookies.set(key, value, options);
+      },
+      remove(key, options) {
+        context.cookies.delete(key, options);
       },
     },
   });
-
-  return supabase;
 };
